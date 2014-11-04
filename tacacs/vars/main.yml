@@ -1,0 +1,38 @@
+---
+
+tacacs:
+  key: "secretsauce"
+  accounting: "/var/log/tac_plus"
+  base_dir: "/opt/tac_plus"
+  repo: "https://github.com/supertylerc/tac_plus"
+
+tacacs_groups:
+  - name: "engineers"
+    default: "permit"
+    services:
+      - name: "junos-exec"
+        local_user: "engineers"
+
+  - name: "tac"
+    default: "permit"
+    services:
+      - name: "junos-exec"
+        local_user: "tac"
+        allow_commands:
+          - "ping.*"
+          - "traceroute.*"
+        deny_configurations:
+          - "system.*"
+          - "snmp.*community"
+          - "protocols bgp.*authentication-key.*"
+
+users:
+  - name: "tyler"
+    tacacs_group: "engineers"
+    login: "PAM"
+
+  - name: "rancid"
+    tacacs_group: "tac"
+    login: "des $6$Ljm/HIsaTw21V$wA.nUvQ9MxBWYVpp1JLRWmlgq7IHdHi2ha3IK7n/IDqhjb1fvPHzz4tA7o/mdAyrEaI5.a5o2fRSnJU0W/rm30"
+    enable: "des $6$Ljm/HIsaTw21V$wA.nUvQ9MxBWYVpp1JLRWmlgq7IHdHi2ha3IK7n/IDqhjb1fvPHzz4tA7o/mdAyrEaI5.a5o2fRSnJU0W/rm30"
+

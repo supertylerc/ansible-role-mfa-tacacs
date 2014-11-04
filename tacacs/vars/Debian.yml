@@ -1,0 +1,12 @@
+---
+
+web_group: www-data
+packages:
+  - build-essential
+  - curl
+  - flex
+  - bison
+  - tcpd
+  - git
+  - libwrap0-dev
+  - libpam0g-dev

@@ -1,0 +1,117 @@
+---
+
+- name: Import OS Variables
+  include_vars: '{{ ansible_os_family }}.yml'
+  tags: [ tacacs ]
+
+- name: Install Prerequisite Packges (RedHat)
+  when: ansible_os_family == 'RedHat'
+  yum:
+    name={{ item }}
+    state=installed
+  with_items: '{{ packages }}'
+  tags: [ tacacs ]
+
+- name: Install Prerequisite Packages (Debian)
+  when: ansible_os_family == 'Debian'
+  apt:
+    name={{ item }}
+    state=installed
+  with_items: '{{ packages }}'
+  tags: [ tacacs ]
+
+- name: Create tacacs User
+  user:
+    name=tacacs
+    comment="TACACS+ User"
+    home={{ tacacs.base_dir }}
+  register: user_results
+  tags: [ tacacs ]
+
+- name: Clone Repository
+  git:
+    repo={{ tacacs.repo }}
+    dest={{ tacacs.base_dir }}/repo
+    update=no
+    depth=1
+  tags: [ tacacs ]
+
+- name: Configure tac_plus
+  shell: ./configure --prefix={{ tacacs.base_dir }} && touch _configured
+    chdir={{ tacacs.base_dir }}/repo/src
+    creates={{ tacacs.base_dir }}/repo/src/_configured
+  tags: [ tacacs ]
+
+- name: Install tac_plus
+  shell: make && make install
+    chdir={{ tacacs.base_dir }}/repo/src
+    creates={{ tacacs.base_dir }}/bin/tac_plus
+  tags: [ tacacs ]
+
+- name: Install tac_plus Upstart Job
+  copy:
+    src=tac_plus.conf
+    dest=/etc/init/tac_plus.conf
+    owner=root
+    group=root
+    mode=0644
+  tags: [ tacacs ]
+
+- name: Create the tac_plus Account File
+  file:
+    dest={{ tacacs.accounting }}
+    owner=tacacs
+    group=tacacs
+    mode=0600
+  tags: [ tacacs ]
+
+- name: Create tac_plus Configuration Directory
+  file:
+    path={{ tacacs.base_dir }}/etc
+    owner=tacacs
+    group=tacacs
+    mode=0600
+    state=directory  
+  tags: [ tacacs ]
+
+- name: Update Permissions for tac_plus Directory
+  file:
+    path={{ tacacs.base_dir }}
+    owner=tacacs
+    group=tacacs
+    state=directory
+    recurse=yes
+  tags: [ tacacs ]
+
+- name: Update tac_plus Configuration
+  template:
+    src=tac_plus.conf
+    dest={{ tacacs.base_dir }}/etc/tac_plus.conf
+    mode=0600
+    owner=tacacs
+    group=tacacs
+  notify: restart tac_plus
+  tags: [ tacacs ]
+
+- name: Update PAM Configuration for tac_plus
+  copy:
+    src=tac_plus.pam
+    dest=/etc/pam.d/tac_plus
+    owner=root
+    group=root
+    mode=0644
+  tags: [ tacacs ]
+
+- name: Clone Google Authenticator
+  git:
+    repo={{ google_authenticator.repo }}
+    dest={{ google_authenticator.dir }}
+    update=no
+    depth=1
+  tags: [ tacacs, google-authenticator ]
+
+- name: Install Google Authenticator
+  shell: make && make install
+    chdir={{ google_authenticator.dir }}
+    creates=/usr/local/bin/google-authenticator
+  tags: [ tacacs, google-authenticator ]
