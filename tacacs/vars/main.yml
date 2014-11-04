@@ -1,5 +1,9 @@
 ---
 
+google_authenticator:
+  repo: https://code.google.com/p/google-authenticator/
+  dir: /usr/src/google_authenticator
+
 tacacs:
   key: "secretsauce"
   accounting: "/var/log/tac_plus"
